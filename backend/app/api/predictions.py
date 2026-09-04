@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -13,7 +13,9 @@ from app.models.prediction import Anomaly, Prediction
 from app.schemas.api import AnomalyRead, PredictionRead
 
 from app.ml.inference.predictor import predict_machine_state
+from app.ml.anomaly.anomaly_predictor import detect_anomaly
 from app.ml.xai.explainer import explain_prediction
+from app.services.alert_service import create_prediction_alerts
 
 router = APIRouter(
     prefix="/machines/{machine_id}",
@@ -32,7 +34,15 @@ class PredictionRequest(BaseModel):
     humidity: float
 
 
-@router.post("/predict", response_model=PredictionRead, status_code=201)
+# ============================================================
+# CREATE PREDICTION
+# ============================================================
+
+@router.post(
+    "/predict",
+    response_model=PredictionRead,
+    status_code=201,
+)
 def create_prediction(
     machine_id: uuid.UUID,
     request: PredictionRequest,
@@ -59,6 +69,9 @@ def create_prediction(
 
     try:
         result = predict_machine_state(features)
+
+        anomaly_result = detect_anomaly(features)
+
         xai_explanation = explain_prediction(features)
 
     except FileNotFoundError as exc:
@@ -75,6 +88,27 @@ def create_prediction(
 
     now = datetime.now(timezone.utc)
 
+    # --------------------------------------------------------
+    # SAVE ANOMALY WHEN DETECTED
+    # --------------------------------------------------------
+
+    if anomaly_result["is_anomaly"]:
+
+        anomaly = Anomaly(
+            machine_id=machine_id,
+            detected_at=now,
+            anomaly_score=anomaly_result["anomaly_score"],
+            triggering_parameters=anomaly_result["features"],
+            model_id=None,
+            status="OPEN",
+        )
+
+        db.add(anomaly)
+
+    # --------------------------------------------------------
+    # SAVE PREDICTION
+    # --------------------------------------------------------
+
     prediction = Prediction(
         machine_id=machine_id,
         prediction_type=PredictionType.FAULT_CLASSIFICATION,
@@ -87,6 +121,7 @@ def create_prediction(
             "data_source": result["data_source"],
             "model_path": result["model_path"],
             "xai": xai_explanation,
+            "anomaly_detection": anomaly_result,
         },
         input_data_range_start=now,
         input_data_range_end=now,
@@ -94,10 +129,24 @@ def create_prediction(
     )
 
     db.add(prediction)
+
+    # Create automatic alerts based on the ML results.
+    create_prediction_alerts(
+        db=db,
+        machine_id=machine_id,
+        prediction_result=result,
+        anomaly_result=anomaly_result,
+    )
+
+    # Commit prediction, anomaly, and generated alerts together.
     db.commit()
+
     db.refresh(prediction)
 
     return prediction
+# ============================================================
+# GET PREDICTION HISTORY
+# ============================================================
 
 @router.get(
     "/predictions",
@@ -106,29 +155,52 @@ def create_prediction(
 def list_predictions(
     machine_id: uuid.UUID,
     prediction_type: PredictionType | None = None,
-    limit: int = Query(100, ge=1, le=1000),
+    limit: int = Query(
+        default=100,
+        ge=1,
+        le=1000,
+    ),
     db: Session = Depends(db_session),
 ):
-    if not db.get(Machine, machine_id):
+    machine = db.get(
+        Machine,
+        machine_id,
+    )
+
+    if machine is None:
         raise HTTPException(
             status_code=404,
             detail="Machine not found",
         )
 
-    stmt = (
+    statement = (
         select(Prediction)
-        .where(Prediction.machine_id == machine_id)
-        .order_by(Prediction.created_at.desc())
+        .where(
+            Prediction.machine_id == machine_id
+        )
+        .order_by(
+            Prediction.created_at.desc()
+        )
         .limit(limit)
     )
 
-    if prediction_type:
-        stmt = stmt.where(
-            Prediction.prediction_type == prediction_type
+    if prediction_type is not None:
+
+        statement = statement.where(
+            Prediction.prediction_type
+            == prediction_type
         )
 
-    return list(db.scalars(stmt).all())
+    predictions = db.scalars(
+        statement
+    ).all()
 
+    return list(predictions)
+
+
+# ============================================================
+# GET ANOMALY HISTORY
+# ============================================================
 
 @router.get(
     "/anomalies",
@@ -137,23 +209,43 @@ def list_predictions(
 def list_anomalies(
     machine_id: uuid.UUID,
     status: str | None = None,
-    limit: int = Query(100, ge=1, le=1000),
+    limit: int = Query(
+        default=100,
+        ge=1,
+        le=1000,
+    ),
     db: Session = Depends(db_session),
 ):
-    if not db.get(Machine, machine_id):
+    machine = db.get(
+        Machine,
+        machine_id,
+    )
+
+    if machine is None:
         raise HTTPException(
             status_code=404,
             detail="Machine not found",
         )
 
-    stmt = (
+    statement = (
         select(Anomaly)
-        .where(Anomaly.machine_id == machine_id)
-        .order_by(Anomaly.detected_at.desc())
+        .where(
+            Anomaly.machine_id == machine_id
+        )
+        .order_by(
+            Anomaly.detected_at.desc()
+        )
         .limit(limit)
     )
 
-    if status:
-        stmt = stmt.where(Anomaly.status == status)
+    if status is not None:
 
-    return list(db.scalars(stmt).all())
+        statement = statement.where(
+            Anomaly.status == status
+        )
+
+    anomalies = db.scalars(
+        statement
+    ).all()
+
+    return list(anomalies)

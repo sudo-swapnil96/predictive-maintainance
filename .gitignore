@@ -12,3 +12,28 @@ ml/models/*
 !ml/models/.gitkeep
 infra/mosquitto/passwd
 .DS_Store
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node.js
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

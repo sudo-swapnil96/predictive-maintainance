@@ -9,6 +9,8 @@ IMPORTANT:
 """
 
 from __future__ import annotations
+import uuid
+from datetime import datetime, timezone
 
 from pathlib import Path
 from typing import Any
@@ -17,7 +19,9 @@ import joblib
 import pandas as pd
 
 
-MODEL_PATH = Path("/app/app/ml/models/fault_state_xgboost.joblib")
+BASE_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_MODEL_PATH = BASE_DIR / "models" / "fault_state_xgboost.joblib"
+MODEL_PATH = DEFAULT_MODEL_PATH if DEFAULT_MODEL_PATH.exists() else Path("/app/app/ml/models/fault_state_xgboost.joblib")
 
 class FaultPredictor:
     """Loads and runs the trained fault-state classification model."""
