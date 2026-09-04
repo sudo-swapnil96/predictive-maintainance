@@ -1,22 +1,30 @@
 """
 Centralized application configuration.
-
-All secrets and environment-specific values come from environment
-variables (see .env.example at the repo root). Nothing here is
-hardcoded. If a required variable is missing at startup, pydantic
-will raise a clear validation error instead of silently defaulting
-to something insecure.
 """
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+# Project root:
+# predictive-maintenance/backend/app/core/config.py
+# parents[0] = core
+# parents[1] = app
+# parents[2] = backend
+# parents[3] = predictive-maintenance
+BASE_DIR = Path(__file__).resolve().parents[3]
+
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     # --- App ---
     app_name: str = "Predictive Maintenance Platform"
@@ -24,13 +32,28 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 
     # --- Database ---
-    database_url: str = Field(..., description="postgresql+psycopg://user:pass@host:port/dbname")
+    database_url: str = Field(
+        ...,
+        description="postgresql+psycopg://user:pass@host:port/dbname",
+    )
 
     # --- Auth ---
-    jwt_secret_key: str = Field(..., description="Random 32+ char secret, set via env var")
+    jwt_secret_key: str = Field(
+        ...,
+        description="Random 32+ character secret",
+    )
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_minutes: int = 60 * 24 * 7
+
+    admin_username: str = Field(
+        ...,
+        description="Single administrator username",
+    )
+    admin_password_hash: str = Field(
+        ...,
+        description="Bcrypt hash of administrator password",
+    )
 
     # --- MQTT ---
     mqtt_host: str = "localhost"
@@ -43,7 +66,9 @@ class Settings(BaseSettings):
     simulator_default_interval_seconds: int = 5
 
     # --- CORS ---
-    cors_allowed_origins: list[str] = ["http://localhost:5173"]
+    cors_allowed_origins: list[str] = [
+        "http://localhost:5173"
+    ]
 
     # --- Logging ---
     log_level: str = "INFO"
@@ -51,5 +76,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Cached settings singleton — import this, don't instantiate Settings() directly."""
     return Settings()
