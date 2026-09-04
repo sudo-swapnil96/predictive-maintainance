@@ -25,28 +25,15 @@ app = FastAPI(
     docs_url="/docs",
     openapi_url="/openapi.json",
 )
+
+# ============================================================
+# CORS CONFIGURATION
+# ============================================================
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://predictive-maintenance-theta.vercel.app",
-        "http://localhost:5173",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ============================================================
-# CORS CONFIGURATION
-#
-# Allows the React/Vite frontend to communicate with the API.
-# Both ports are included because Vite may automatically switch
-# from 5173 to 5174 when another development server is running.
-# ============================================================
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
         "http://localhost:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5173",
@@ -63,8 +50,6 @@ app.add_middleware(
 
 @app.get("/api/v1/health", tags=["system"])
 def health_check() -> dict:
-    """Basic application health check."""
-
     return {
         "status": "ok",
         "app": settings.app_name,
