@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.database.session import Base, engine
+import app.models
 from app.api import (
     machines,
     readings,
@@ -63,6 +65,8 @@ def health_check() -> dict:
 
 @app.on_event("startup")
 def on_startup() -> None:
+Base.metadata.create_all(bind=engine)
+
     logger.info(
         "Starting %s in %s mode",
         settings.app_name,
