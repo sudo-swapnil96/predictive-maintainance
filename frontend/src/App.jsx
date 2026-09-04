@@ -49,7 +49,7 @@ import { WorkOrders } from './components/WorkOrders'
 import { VivaDefenseGuide } from './components/VivaDefenseGuide'
 import { LaserDigitalTwin } from './components/LaserDigitalTwin'
 
-const API_URL = 'http://127.0.0.1:8000/api/v1'
+const API_URL = 'https://predictive-maintenance-api-xnut.onrender.com/api/v1'
 const DEFAULT_MACHINE_ID = '9c5159c2-cb21-4998-869a-f6ac43901737'
 const REFRESH_DELAY = 1000
 
