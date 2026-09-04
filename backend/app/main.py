@@ -65,15 +65,13 @@ def health_check() -> dict:
 
 @app.on_event("startup")
 def on_startup() -> None:
-Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
     logger.info(
         "Starting %s in %s mode",
         settings.app_name,
         settings.environment,
     )
-
-
 # ============================================================
 # API ROUTERS
 # ============================================================
