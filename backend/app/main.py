@@ -25,6 +25,16 @@ app = FastAPI(
     docs_url="/docs",
     openapi_url="/openapi.json",
 )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://predictive-maintenance-theta.vercel.app",
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ============================================================
 # CORS CONFIGURATION
