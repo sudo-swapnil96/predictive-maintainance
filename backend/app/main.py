@@ -35,6 +35,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://predictive-maintainance-theta.vercel.app",
         "https://predictive-maintenance-theta.vercel.app",
         "http://localhost:5173",
         "http://localhost:5174",
