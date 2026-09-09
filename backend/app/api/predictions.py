@@ -88,10 +88,6 @@ def create_prediction(
 
     now = datetime.now(timezone.utc)
 
-    # --------------------------------------------------------
-    # SAVE ANOMALY WHEN DETECTED
-    # --------------------------------------------------------
-
     if anomaly_result["is_anomaly"]:
 
         anomaly = Anomaly(

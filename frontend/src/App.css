@@ -169,6 +169,7 @@ button {
 .brand-icon {
   width: 48px;
   height: 48px;
+  padding: 0;
   flex-shrink: 0;
   display: grid;
   place-items: center;
@@ -177,6 +178,7 @@ button {
   color: var(--cyan);
   background: radial-gradient(circle, rgba(49, 215, 255, 0.18), transparent 70%), #081524;
   box-shadow: 0 0 16px rgba(49, 215, 255, 0.15);
+  cursor: pointer;
 }
 
 .brand-text strong {
@@ -197,26 +199,6 @@ button {
   white-space: nowrap;
 }
 
-.sidebar-toggle {
-  position: absolute;
-  top: 14px;
-  right: 10px;
-  width: 26px;
-  height: 26px;
-  border: 1px solid #1c3d5a;
-  background: #091829;
-  color: var(--cyan);
-  display: grid;
-  place-items: center;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.sidebar-toggle:hover {
-  border-color: var(--cyan);
-  box-shadow: 0 0 10px var(--cyan-glow);
-}
-
 .sidebar.collapsed .sidebar-brand {
   padding: 18px 10px;
   justify-content: center;
@@ -229,13 +211,6 @@ button {
 
 .sidebar.collapsed .brand-text {
   display: none;
-}
-
-.sidebar.collapsed .sidebar-toggle {
-  top: 6px;
-  right: 6px;
-  width: 20px;
-  height: 20px;
 }
 
 /* NAVIGATION LIST */
@@ -1417,6 +1392,29 @@ button {
   color: #c4d7e8;
 }
 
+.ai-recommendation {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-left: 3px solid var(--cyan);
+  background: rgba(49, 215, 255, 0.06);
+}
+
+.ai-recommendation strong {
+  color: #fff;
+  font-family: "Orbitron", sans-serif;
+  font-size: 13px;
+}
+
+.ai-recommendation p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 /* TOP CONTRIBUTORS LIST */
 
 .contributors-list {
@@ -2147,7 +2145,6 @@ button {
   }
 
   .brand-text,
-  .sidebar-toggle,
   .nav-label,
   .sidebar-status span {
     display: none;
@@ -2199,122 +2196,6 @@ button {
 /* =========================================================
    MAJOR PROJECT ELEVATION EXTENSIONS (120 MARKS)
 ========================================================= */
-
-/* --- Quick Scenarios Bar --- */
-.quick-scenarios-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px 20px;
-  margin-bottom: 24px;
-  background: linear-gradient(135deg, rgba(16, 31, 51, 0.95), rgba(8, 18, 32, 0.95));
-  border: 1px solid rgba(49, 215, 255, 0.25);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
-}
-
-.quick-scenarios-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.quick-title-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.quick-title-box strong {
-  color: #fff;
-  font-family: "Orbitron", sans-serif;
-  letter-spacing: 0.5px;
-}
-
-.zap-icon {
-  color: #ffae42;
-  animation: zapPulse 2s infinite;
-}
-
-@keyframes zapPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.15); }
-}
-
-.btn-open-studio {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background: rgba(49, 215, 255, 0.12);
-  border: 1px solid var(--cyan);
-  border-radius: 6px;
-  color: var(--cyan);
-  font-size: 12px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.btn-open-studio:hover {
-  background: var(--cyan);
-  color: #030914;
-  box-shadow: 0 0 15px var(--cyan-glow);
-}
-
-.quick-buttons-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.quick-scenario-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: rgba(11, 22, 38, 0.9);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.25s ease;
-}
-
-.quick-scenario-btn:hover {
-  border-color: var(--cyan);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.quick-scenario-btn .btn-badge {
-  font-family: "Orbitron", sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.quick-scenario-btn.s-normal .btn-badge {
-  background: rgba(53, 214, 154, 0.2);
-  color: #35d69a;
-  border: 1px solid rgba(53, 214, 154, 0.4);
-}
-
-.quick-scenario-btn.s-degrading .btn-badge {
-  background: rgba(255, 174, 66, 0.2);
-  color: #ffae42;
-  border: 1px solid rgba(255, 174, 66, 0.4);
-}
-
-.quick-scenario-btn.s-fault .btn-badge {
-  background: rgba(255, 59, 69, 0.2);
-  color: #ff3b45;
-  border: 1px solid rgba(255, 59, 69, 0.4);
-}
 
 /* --- Stats & Gauge Composite Section --- */
 .stats-gauge-composite {
@@ -2722,6 +2603,30 @@ button {
 .btn-reset-baseline:hover {
   border-color: var(--cyan);
   color: var(--cyan);
+}
+
+.btn-reset-machine {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 59, 69, 0.1);
+  border: 1px solid rgba(255, 59, 69, 0.65);
+  border-radius: 6px;
+  color: #ff8d94;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.btn-reset-machine:hover:not(:disabled) {
+  background: #ff3b45;
+  border-color: #ff3b45;
+  color: #030914;
+}
+
+.btn-reset-machine:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .sim-message-banner {
@@ -3534,184 +3439,6 @@ button {
   color: var(--text-muted);
 }
 
-/* --- Viva Presentation & Defense Guide --- */
-.viva-guide-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.viva-panel {
-  padding: 24px;
-}
-
-.architecture-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.arch-layer-card {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 16px 20px;
-  background: rgba(11, 22, 38, 0.85);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  transition: all 0.25s ease;
-}
-
-.arch-layer-card:hover {
-  border-color: var(--cyan);
-  transform: translateX(4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
-.arch-layer-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.arch-icon-box {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  flex-shrink: 0;
-}
-
-.arch-number {
-  font-family: "Orbitron", sans-serif;
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--text-dim);
-}
-
-.arch-layer-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.arch-layer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.arch-title {
-  font-size: 14px;
-  font-family: "Orbitron", sans-serif;
-  color: #fff;
-}
-
-.arch-tech {
-  font-size: 11px;
-  padding: 2px 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  color: var(--cyan);
-}
-
-.arch-desc {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.metrics-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-}
-
-.metric-box-viva {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 18px;
-  background: rgba(8, 16, 28, 0.9);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  text-align: center;
-}
-
-.viva-metric-label {
-  font-size: 10px;
-  font-family: "Orbitron", sans-serif;
-  color: var(--text-dim);
-}
-
-.viva-metric-val {
-  font-family: "Orbitron", sans-serif;
-  font-size: 30px;
-  font-weight: 800;
-  color: var(--cyan);
-  text-shadow: 0 0 15px var(--cyan-glow);
-}
-
-.viva-metric-sub {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.faq-accordion {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.faq-item {
-  background: rgba(11, 22, 38, 0.8);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  overflow: hidden;
-}
-
-.faq-item:hover {
-  border-color: var(--border-bright);
-}
-
-.faq-item.open {
-  border-color: var(--cyan);
-  background: rgba(14, 28, 48, 0.9);
-}
-
-.faq-question-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  color: #fff;
-  font-size: 14px;
-  gap: 12px;
-}
-
-.faq-question-row strong {
-  font-family: "Orbitron", sans-serif;
-  font-size: 13px;
-  letter-spacing: 0.3px;
-}
-
-.faq-answer-body {
-  padding: 0 20px 18px;
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1.6;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  margin-top: 4px;
-  padding-top: 14px;
-}
-
 /* --- Digital Twin Advanced Animations --- */
 .hud-rpm-tag {
   font-family: "Orbitron", sans-serif;
@@ -3799,8 +3526,7 @@ button {
   .sidebar,
   .topbar,
   .no-print,
-  .app-footer,
-  .quick-scenarios-bar {
+  .app-footer {
     display: none !important;
   }
 

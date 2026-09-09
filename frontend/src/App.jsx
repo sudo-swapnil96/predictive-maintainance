@@ -2,14 +2,12 @@ import { useEffect, useState, useRef } from 'react'
 import {
   Activity,
   AlertTriangle,
-  Award,
   BellRing,
   Bot,
   Box,
   Brain,
   BrainCircuit,
   CheckCircle2,
-  ChevronLeft,
   ChevronRight,
   Clock,
   Cpu,
@@ -26,7 +24,6 @@ import {
   RotateCw,
   ShieldAlert,
   ShieldCheck,
-  Sliders,
   TrendingDown,
   TrendingUp,
   TriangleAlert,
@@ -39,14 +36,12 @@ import { HealthGauge } from './components/HealthGauge'
 import { TelemetryCharts } from './components/TelemetryCharts'
 import { SimulationStudio } from './components/SimulationStudio'
 import {
-  SCENARIOS,
   NOMINAL_BASELINE,
   sanitizeTelemetry,
   generateStreamJitter,
 } from './data/scenarios'
 import { PrognosticsRUL } from './components/PrognosticsRUL'
 import { WorkOrders } from './components/WorkOrders'
-import { VivaDefenseGuide } from './components/VivaDefenseGuide'
 import { LaserDigitalTwin } from './components/LaserDigitalTwin'
 
 const API_URL = 'https://predictive-maintenance-api-xnut.onrender.com/api/v1'
@@ -122,7 +117,10 @@ function App() {
         throw new Error(`Unable to load machines (${response.status})`)
       }
       const data = await response.json()
-      setMachines(getResponseArray(data))
+      const registeredMachines = getResponseArray(data).filter(
+        (machine) => String(machine.machine_code || '').trim().toLowerCase() !== 'string'
+      )
+      setMachines(registeredMachines)
     } catch (err) {
       console.error('Machine fetch error:', err)
     }
@@ -330,6 +328,20 @@ function App() {
     }
   }
 
+  const resetMachine = async () => {
+    const baselineHistory = Array.from({ length: 6 }, (_, index) => ({
+      ...NOMINAL_BASELINE,
+      timestamp: Date.now() - (5 - index) * 10000,
+    }))
+
+    currentFeaturesRef.current = NOMINAL_BASELINE
+    setTelemetryHistory(baselineHistory)
+    setStreamCount(0)
+    await executeSimulationStep(NOMINAL_BASELINE, 'MACHINE RESET')
+    setActionSuccess('Machine reset to nominal operating state')
+    setTimeout(() => setActionSuccess(null), 3500)
+  }
+
   // Global persistent streaming ticker
   const sendGlobalStreamTick = async () => {
     try {
@@ -405,7 +417,13 @@ function App() {
       : 0.95
 
   const confidence = (rawProbability * 100).toFixed(2)
-  const health = dashboard?.overall_health || 'HEALTHY'
+  const health = latestPrediction
+    ? predictionState === 'FAULT'
+      ? 'CRITICAL'
+      : predictionState === 'DEGRADING'
+      ? 'WARNING'
+      : 'HEALTHY'
+    : dashboard?.overall_health || 'HEALTHY'
 
   const machineName =
     dashboard?.machine_name ||
@@ -415,21 +433,35 @@ function App() {
 
   const openAnomalies =
     dashboard?.open_anomalies ??
-    anomalies.filter((item) => item.status === 'OPEN' || item.status === 'ANOMALY').length
+    anomalies.filter((item) => item.status === 'OPEN').length
 
-  const activeAlerts =
-    dashboard?.active_alerts ??
-    alerts.filter((item) => !item.resolved && !item.resolved_at).length
+  const activeAlertRecords = alerts.filter((item) => !item.resolved && !item.resolved_at)
+  const backendActiveAlerts = dashboard?.active_alerts ?? activeAlertRecords.length
+  const hasCurrentMachineStateAlert = activeAlertRecords.some(
+    (item) => item.parameter_key === 'machine_state'
+  )
+  const hasCurrentAnomalyAlert = activeAlertRecords.some(
+    (item) => item.parameter_key === 'anomaly_detection'
+  )
+  const hasDuplicateCurrentAlerts =
+    predictionState !== 'NORMAL' && hasCurrentMachineStateAlert && hasCurrentAnomalyAlert
+  const activeAlerts = hasDuplicateCurrentAlerts
+    ? Math.max(1, backendActiveAlerts - 1)
+    : backendActiveAlerts
 
   // Calculate machine health score (0 - 100)
   const calculateHealthScore = () => {
+    const latestAnomalyIsOpen =
+      latestAnomaly?.status === 'OPEN' || latestAnomaly?.status === 'ANOMALY'
+    const anomalyPenalty = latestAnomalyIsOpen ? 8 : 0
+
     if (predictionState === 'FAULT' || health === 'CRITICAL') {
-      return Math.max(8, Math.round(28 - activeAlerts * 4 - openAnomalies * 2))
+      return Math.max(15, Math.round(32 - activeAlerts * 4 - anomalyPenalty))
     }
     if (predictionState === 'DEGRADING' || health === 'WARNING') {
-      return Math.max(35, Math.round(68 - activeAlerts * 6 - openAnomalies * 3))
+      return Math.max(40, Math.round(68 - activeAlerts * 6 - anomalyPenalty))
     }
-    return Math.max(78, Math.round(98 - activeAlerts * 4 - openAnomalies * 2))
+    return Math.max(82, Math.round(98 - activeAlerts * 4 - anomalyPenalty))
   }
 
   const healthScore = calculateHealthScore()
@@ -606,38 +638,6 @@ function App() {
             diagnostics.
           </p>
         </div>
-
-        {/* 1-CLICK QUICK FAULT SCENARIOS RIBBON */}
-        <section className="quick-scenarios-bar panel">
-          <div className="quick-scenarios-header">
-            <div className="quick-title-box">
-              <Zap size={18} className="zap-icon" />
-              <strong>Quick Fault Injection & Simulation:</strong>
-              <span>Test live machine state transitions in 1 click:</span>
-            </div>
-            <button
-              className="btn-open-studio"
-              onClick={() => setActivePage('simulation')}
-            >
-              <Sliders size={14} />
-              <span>Open Simulation Studio</span>
-            </button>
-          </div>
-
-          <div className="quick-buttons-row">
-            {SCENARIOS.map((s) => (
-              <button
-                key={s.id}
-                className={`quick-scenario-btn s-${s.badge.toLowerCase()}`}
-                onClick={() => executeQuickScenario(s)}
-                title={s.description}
-              >
-                <span className="btn-badge">{s.badge}</span>
-                <span className="btn-name">{s.name.split('.')[1] || s.name}</span>
-              </button>
-            ))}
-          </div>
-        </section>
 
         {/* TOP STATS & GAUGE GRID */}
         <section className="stats-gauge-composite">
@@ -900,6 +900,7 @@ function App() {
     )
 
     const primaryContributor = diagnosisContributors[0] || topContributors[0] || null
+    const actionableContributor = predictionState === 'NORMAL' ? null : primaryContributor
     const faultDiagnosis = getFaultDiagnosis(latestPrediction)
 
     return (
@@ -964,6 +965,20 @@ function App() {
             </div>
 
             <p className="diagnosis-text">{faultDiagnosis.description}</p>
+
+            <div className="ai-recommendation">
+              <span className="diagnosis-label">RECOMMENDED NEXT ACTION</span>
+              <strong>
+                {actionableContributor
+                  ? `Inspect ${formatFeatureName(actionableContributor.feature)}`
+                  : 'Continue nominal monitoring'}
+              </strong>
+              <p>
+                {actionableContributor
+                  ? getMaintenanceAction(actionableContributor.feature)
+                  : 'No high-impact SHAP contributor requires immediate intervention.'}
+              </p>
+            </div>
           </div>
         </section>
 
@@ -1345,6 +1360,7 @@ function App() {
               streamIntervalMs={streamIntervalMs}
               onIntervalChange={setStreamIntervalMs}
               onExecuteInference={executeSimulationStep}
+              onResetMachine={resetMachine}
             />
           </div>
         )
@@ -1377,8 +1393,6 @@ function App() {
             prediction={latestPrediction}
           />
         )
-      case 'defense':
-        return <VivaDefenseGuide />
       case 'machines':
         return renderMachines()
       case 'predictions':
@@ -1404,7 +1418,6 @@ function App() {
     { id: 'alerts', label: 'Alerts', icon: AlertTriangle, badge: activeAlerts },
     { id: 'predictions', label: 'Predictions', icon: BrainCircuit },
     { id: 'machines', label: 'Machines', icon: Cpu },
-    { id: 'defense', label: 'Viva & Defense', icon: Award },
   ]
 
   // =========================================================
@@ -1415,9 +1428,14 @@ function App() {
       {/* SIDEBAR */}
       <aside className={`sidebar ${sidebarOpen ? 'expanded' : 'collapsed'}`}>
         <div className="sidebar-brand">
-          <div className="brand-icon">
+          <button
+            className="brand-icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            title={sidebarOpen ? 'Collapse navigation menu' : 'Open navigation menu'}
+            aria-label={sidebarOpen ? 'Collapse navigation menu' : 'Open navigation menu'}
+          >
             <Cpu size={28} />
-          </div>
+          </button>
 
           {sidebarOpen && (
             <div className="brand-text">
@@ -1426,13 +1444,6 @@ function App() {
             </div>
           )}
 
-          <button
-            className="sidebar-toggle"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-          >
-            {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
-          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -1474,8 +1485,6 @@ function App() {
                 ? 'Remaining Useful Life (RUL) & Prognostics'
                 : activePage === 'workorders'
                 ? 'Prescriptive Maintenance Work Orders'
-                : activePage === 'defense'
-                ? 'Architecture & Viva Defense Guide'
                 : activePage === 'machines'
                 ? 'Machine Control Center'
                 : activePage === 'predictions'

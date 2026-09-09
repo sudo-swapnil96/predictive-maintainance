@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -23,6 +25,18 @@ def create_prediction_alerts(
     created_alerts = []
 
     predicted_state = prediction_result["predicted_state"]
+
+    if predicted_state != "NORMAL":
+        redundant_anomaly_alerts = db.scalars(
+            select(Alert).where(
+                Alert.machine_id == machine_id,
+                Alert.parameter_key == "anomaly_detection",
+                Alert.resolved_at.is_(None),
+            )
+        ).all()
+
+        for alert in redundant_anomaly_alerts:
+            alert.resolved_at = datetime.now(timezone.utc)
 
     # ---------------------------------------------------------
     # FAULT ALERT
@@ -103,7 +117,9 @@ def create_prediction_alerts(
     # ANOMALY ALERT
     # ---------------------------------------------------------
 
-    if anomaly_result["is_anomaly"]:
+    # A non-normal model state already has a machine-state alert. Keep the
+    # anomaly record for diagnostics, but avoid creating a duplicate alert.
+    if anomaly_result["is_anomaly"] and predicted_state == "NORMAL":
 
         dedup_key = f"{machine_id}:anomaly:warning"
 

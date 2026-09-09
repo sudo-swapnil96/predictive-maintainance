@@ -29,6 +29,7 @@ export function SimulationStudio({
   streamCount: globalStreamCount,
   streamIntervalMs: globalIntervalMs,
   onExecuteInference: globalExecuteInference,
+  onResetMachine,
 }) {
   const [selectedScenario, setSelectedScenario] = useState('nominal')
   const [customParams, setCustomParams] = useState(() =>
@@ -183,6 +184,26 @@ export function SimulationStudio({
     handleInjectScenario(nominal)
   }
 
+  const handleMachineReset = async () => {
+    if (isStreaming && globalToggleStreaming) {
+      globalToggleStreaming()
+    }
+    setSelectedScenario('nominal')
+    setCustomParams(sanitizeTelemetry(NOMINAL_BASELINE))
+    setLastResult(null)
+    setStatusMessage({ type: 'info', text: 'Resetting machine to nominal operating state...' })
+
+    try {
+      if (onResetMachine) {
+        await onResetMachine()
+      } else {
+        await executeInference(NOMINAL_BASELINE, 'MACHINE RESET')
+      }
+    } catch {
+      // The inference handler presents the failure message to the operator.
+    }
+  }
+
   return (
     <div className="simulation-studio-panel panel">
       <div className="panel-header">
@@ -236,6 +257,16 @@ export function SimulationStudio({
           >
             <RotateCw size={16} />
             <span>RESET TO HEALTHY</span>
+          </button>
+
+          <button
+            className="btn-reset-machine"
+            onClick={handleMachineReset}
+            disabled={injecting}
+            title="Reset the selected machine and simulation state"
+          >
+            <Cpu size={16} />
+            <span>RESET MACHINE</span>
           </button>
         </div>
       </div>
