@@ -1544,10 +1544,6 @@ function App() {
 
         <footer className="app-footer">
           <div className="footer-content">
-            <span className="footer-tag">
-              <i className="status-live-pulse" />
-              PREDICTIVE MAINTENANCE PLATFORM • MAJOR PROJECT EDITION (120 MARKS)
-            </span>
             <span className="footer-machine">ACTIVE ASSET ID: {machineId}</span>
           </div>
         </footer>
