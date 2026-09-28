@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Predictive Maintenance</string>
+    <string name="title_activity_main">Predictive Maintenance</string>
+    <string name="package_name">com.predictive.maintenance</string>
+    <string name="custom_url_scheme">com.predictive.maintenance</string>
+</resources>
