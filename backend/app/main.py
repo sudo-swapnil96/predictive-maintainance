@@ -80,8 +80,30 @@ def on_startup() -> None:
     try:
         Base.metadata.create_all(bind=engine)
         logger.info("Database schema successfully verified on startup")
+
+        # Auto-seed default Han's Laser machine if table is fresh
+        from app.database.session import SessionLocal
+        from app.models.machine import Machine
+        from app.models.enums import MachineStatusEnum
+        import uuid
+        with SessionLocal() as db:
+            default_id = uuid.UUID("0cc58bcb-4278-4f29-85c4-3a1362bc55f9")
+            if not db.get(Machine, default_id):
+                db.add(
+                    Machine(
+                        id=default_id,
+                        machine_code="HL-FIBER-M01",
+                        name="Han's Laser Fiber Marking Station",
+                        machine_type="Class 4 Ytterbium Fiber Laser Engraver",
+                        manufacturer="Han's Laser",
+                        status=MachineStatusEnum.ONLINE,
+                        notes="Class 4 pulsed Ytterbium fiber laser with high-speed galvanometer optical scanner."
+                    )
+                )
+                db.commit()
+                logger.info("Default machine 0cc58bcb seeded into database")
     except Exception as exc:
-        logger.warning("Database unavailable on startup (non-fatal, continuing): %s", exc)
+        logger.warning("Database startup check warning: %s", exc)
 
     logger.info(
         "Starting %s in %s mode",
