@@ -48,8 +48,19 @@ app.add_middleware(
 )
 
 # ============================================================
-# SYSTEM HEALTH CHECK
+# SYSTEM HEALTH CHECK & ROOT
 # ============================================================
+
+@app.get("/", tags=["system"])
+def root_index() -> dict:
+    return {
+        "status": "ok",
+        "app": settings.app_name,
+        "environment": settings.environment,
+        "docs": "/docs",
+        "health": "/api/v1/health",
+    }
+
 
 @app.get("/api/v1/health", tags=["system"])
 def health_check() -> dict:
@@ -66,7 +77,11 @@ def health_check() -> dict:
 
 @app.on_event("startup")
 def on_startup() -> None:
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database schema successfully verified on startup")
+    except Exception as exc:
+        logger.warning("Database unavailable on startup (non-fatal, continuing): %s", exc)
 
     logger.info(
         "Starting %s in %s mode",

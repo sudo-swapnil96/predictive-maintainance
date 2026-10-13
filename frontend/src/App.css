@@ -374,6 +374,52 @@ button {
   gap: 16px;
 }
 
+.status-badge-cloud {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.status-badge-cloud.online {
+  background: rgba(53, 214, 154, 0.12);
+  border: 1px solid rgba(53, 214, 154, 0.4);
+  color: #35d69a;
+}
+
+.status-badge-cloud.edge {
+  background: rgba(49, 215, 255, 0.12);
+  border: 1px solid rgba(49, 215, 255, 0.4);
+  color: #31d7ff;
+}
+
+.status-badge-cloud .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.status-badge-cloud.online .dot {
+  background: #35d69a;
+  box-shadow: 0 0 8px #35d69a;
+}
+
+.status-badge-cloud.edge .dot {
+  background: #31d7ff;
+  box-shadow: 0 0 8px #31d7ff;
+  animation: pulse-edge 2s infinite ease-in-out;
+}
+
+@keyframes pulse-edge {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); box-shadow: 0 0 12px #31d7ff; }
+}
+
 .current-machine-indicator {
   display: flex;
   align-items: center;
