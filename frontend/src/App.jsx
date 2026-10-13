@@ -8,8 +8,10 @@ import {
   Brain,
   BrainCircuit,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Clock,
+  Cloud,
   Cpu,
   Download,
   FileText,
@@ -88,6 +90,12 @@ function App() {
   const [anomalies, setAnomalies] = useState([])
   const [isEdgeMode, setIsEdgeMode] = useState(false)
 
+  // Engine mode: 'auto' | 'cloud' | 'edge'
+  const [engineMode, setEngineMode] = useState('auto')
+  // API connectivity status
+  const [apiStatus, setApiStatus] = useState({ online: null, latencyMs: null, lastChecked: null })
+  const apiPingRef = useRef(null)
+
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(null)
@@ -124,6 +132,88 @@ function App() {
     } catch (err) {
       clearTimeout(timer)
       throw err
+    }
+  }
+
+  // =========================================================
+  // ENGINE MODE MANAGEMENT & API HEALTH PING
+  // =========================================================
+
+  const pingApiHealth = async () => {
+    const start = Date.now()
+    try {
+      const res = await fetchWithTimeout(`${API_URL}/health`, {}, 4000)
+      const latencyMs = Date.now() - start
+      if (res.ok) {
+        setApiStatus({ online: true, latencyMs, lastChecked: new Date() })
+        return true
+      }
+      setApiStatus({ online: false, latencyMs: null, lastChecked: new Date() })
+      return false
+    } catch {
+      setApiStatus({ online: false, latencyMs: null, lastChecked: new Date() })
+      return false
+    }
+  }
+
+  // Background health ping every 30 seconds
+  useEffect(() => {
+    pingApiHealth()
+    apiPingRef.current = setInterval(pingApiHealth, 30000)
+    return () => clearInterval(apiPingRef.current)
+  }, [])
+
+  // Switch engine mode and apply immediately
+  const switchEngineMode = async (mode) => {
+    setEngineMode(mode)
+    if (mode === 'edge') {
+      setIsEdgeMode(true)
+      const edgeData = getEdgeInitialData(machineId || DEFAULT_MACHINE_ID)
+      setMachines(edgeData.machines)
+      setDashboard(edgeData.dashboard)
+      setPredictions(edgeData.predictions)
+      setAlerts(edgeData.alerts)
+      setAnomalies(edgeData.anomalies)
+      setTelemetryHistory(edgeData.telemetryHistory)
+      setActionSuccess('Switched to Edge AI Engine — running fully offline.')
+      setTimeout(() => setActionSuccess(null), 3000)
+    } else if (mode === 'cloud') {
+      setIsEdgeMode(false)
+      setLoading(true)
+      try {
+        await Promise.all([fetchMachines(), loadAllData()])
+        setActionSuccess('Switched to Cloud API Engine — connected to Render backend.')
+        setTimeout(() => setActionSuccess(null), 3000)
+      } catch {
+        setIsEdgeMode(true)
+        setEngineMode('edge')
+        setActionSuccess('Cloud API unreachable — fallback to Edge AI Engine.')
+        setTimeout(() => setActionSuccess(null), 4000)
+      } finally {
+        setLoading(false)
+      }
+    } else {
+      // auto: try cloud first, fall back to edge
+      setLoading(true)
+      try {
+        await Promise.all([fetchMachines(), loadAllData()])
+        setIsEdgeMode(false)
+        setActionSuccess('Auto mode: Cloud API is online.')
+        setTimeout(() => setActionSuccess(null), 3000)
+      } catch {
+        const edgeData = getEdgeInitialData(machineId || DEFAULT_MACHINE_ID)
+        setMachines(edgeData.machines)
+        setDashboard(edgeData.dashboard)
+        setPredictions(edgeData.predictions)
+        setAlerts(edgeData.alerts)
+        setAnomalies(edgeData.anomalies)
+        setTelemetryHistory(edgeData.telemetryHistory)
+        setIsEdgeMode(true)
+        setActionSuccess('Auto mode: Cloud offline — Edge AI Engine activated.')
+        setTimeout(() => setActionSuccess(null), 4000)
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -1560,9 +1650,13 @@ function App() {
           ))}
         </nav>
 
-        <div className="sidebar-status">
+        <div className={`sidebar-status ${apiStatus.online === false ? 'sidebar-status-offline' : apiStatus.online === true ? 'sidebar-status-online' : ''}`}>
           <Wifi size={16} className="status-dot-icon" />
-          {sidebarOpen && <span>Telemetry Online</span>}
+          {sidebarOpen && (
+            <span>
+              {apiStatus.online === null ? 'Connecting...' : apiStatus.online ? `API Online` : 'API Offline (Edge)'}
+            </span>
+          )}
         </div>
       </aside>
 
@@ -1593,12 +1687,58 @@ function App() {
           </div>
 
           <div className="topbar-actions">
-            <div
-              className={`status-badge-cloud ${isEdgeMode ? 'edge' : 'online'}`}
-              title={isEdgeMode ? 'High-Performance Edge AI active (Cloud offline)' : 'Connected to Cloud ML API'}
-            >
-              <span className="dot" />
-              <span>{isEdgeMode ? 'EDGE AI (ACTIVE)' : 'CLOUD ENGINE ONLINE'}</span>
+            {/* ENGINE CONTROL PANEL */}
+            <div className="engine-control-panel">
+              <div className="engine-mode-tabs">
+                <button
+                  id="engine-mode-auto"
+                  className={`engine-tab-btn ${engineMode === 'auto' ? 'active auto' : ''}`}
+                  onClick={() => switchEngineMode('auto')}
+                  title="Auto: try Cloud first, fall back to Edge"
+                >
+                  <Zap size={12} />
+                  AUTO
+                </button>
+                <button
+                  id="engine-mode-cloud"
+                  className={`engine-tab-btn ${engineMode === 'cloud' ? 'active cloud' : ''}`}
+                  onClick={() => switchEngineMode('cloud')}
+                  title="Force Cloud API (Render backend)"
+                >
+                  <Cloud size={12} />
+                  CLOUD
+                </button>
+                <button
+                  id="engine-mode-edge"
+                  className={`engine-tab-btn ${engineMode === 'edge' ? 'active edge' : ''}`}
+                  onClick={() => switchEngineMode('edge')}
+                  title="Force local Edge AI Engine (offline)"
+                >
+                  <Cpu size={12} />
+                  EDGE
+                </button>
+              </div>
+
+              <div
+                className={`engine-status-capsule ${isEdgeMode ? 'status-edge' : 'status-cloud'}`}
+                title={`Last checked: ${apiStatus.lastChecked ? apiStatus.lastChecked.toLocaleTimeString() : 'pending...'}`}
+                onClick={pingApiHealth}
+                style={{ cursor: 'pointer' }}
+              >
+                <span className="engine-ping-dot" />
+                <span>
+                  {isEdgeMode
+                    ? 'EDGE AI ACTIVE'
+                    : apiStatus.online === null
+                    ? 'CONNECTING...'
+                    : apiStatus.online
+                    ? 'CLOUD ONLINE'
+                    : 'CLOUD OFFLINE'}
+                </span>
+                {apiStatus.latencyMs !== null && !isEdgeMode && (
+                  <span className="engine-latency-tag">{apiStatus.latencyMs}ms</span>
+                )}
+              </div>
             </div>
 
             <button
