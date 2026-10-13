@@ -7,8 +7,12 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-connect_args = {"connect_timeout": 3} if "postgresql" in settings.database_url else {}
-engine = create_engine(settings.database_url, pool_pre_ping=True, future=True, connect_args=connect_args)
+db_url = settings.database_url
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+connect_args = {"connect_timeout": 5} if "postgresql" in db_url else {}
+engine = create_engine(db_url, pool_pre_ping=True, future=True, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 
